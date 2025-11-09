@@ -1,0 +1,27 @@
+# Node modules
+client/node_modules/
+server/node_modules/
+
+server/.env
+
+# temporray storage folder
+server/uploads/
+server/temp/
+
+# Python virtual environment
+server/Python_Core/venv/
+
+
+python_service/venv/
+
+# Python service output folders
+python_service/uploads/
+python_service/processed/
+python_service/temp/
+python_service/chunks/
+python_service/*.log
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
