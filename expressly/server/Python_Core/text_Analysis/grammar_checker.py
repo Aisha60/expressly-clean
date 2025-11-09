@@ -20,7 +20,7 @@ class GrammarChecker:
                     'language': 'en-US',
                     'enabledOnly': 'false'
                 },
-                timeout=10
+                timeout=20
             )
             
             if response.status_code != 200:
