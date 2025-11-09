@@ -79,9 +79,9 @@ export default function Dashboard() {
     },
     { 
       icon: <Award size={24} />, 
-      title: "COMPLETE ASSESSMENT", 
-      description: "Comprehensive skill evaluation",
-      onClick: () => navigate('/complete'),
+      title: "PRACTICE TASKS", 
+      description: "Complete exercises to boost your skills",
+      onClick: () => navigate('/practiceExercises'),
       color: "from-yellow-500 to-amber-500"
     },
   ];

@@ -15,15 +15,10 @@ import Chatbot from './components/chatbot.js';
 import { AuthProvider, useAuth } from './context/AuthContext.js';
 import ConversationCoach from './components/ConversationCoach.js';
 import SpeechAnalysisFeedbackReport from './components/FeedbackSpeech.js';
-import PracticeSpeechExercise from './components/Exercises.js';
 import ToneMatchingExercise from './components/SpeechPractice.js';
 import TextFeedbackReport from './components/FeedbackText.js';
-import WrittenPractice from './components/WrittenPractice.js';
 import BodyLanguageReport from './components/FeedbackVideo.js';
-import BodyLanguagePractice from './components/PracticeBodyLanguage.js';
-import CompleteAnalysisApp from './components/complete.js';
-import CompleteAnalysisFeedbackReport from './components/CompleteFeedback.js';
-import ExerciseModule from './components/CompletePractice.js';
+import PracticeExercises from './components/PracticeExercises.js';
 
 
 // ProtectedRoute
@@ -113,14 +108,6 @@ function App() {
             }
           />
           <Route
-            path="/complete"
-            element={
-              <ProtectedRoute message="Please log in to access complete analysis">
-                <CompleteAnalysisApp />
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="/conversationCoach"
             element={
               <ProtectedRoute message="Please log in to access Conversation Coach">
@@ -153,14 +140,6 @@ function App() {
             }
           />
           <Route
-            path="/practice"
-            element={
-              <ProtectedRoute message="Please log in to access practice exercises">
-                <PracticeSpeechExercise />
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="/practiceSpeech"
             element={
               <ProtectedRoute message="Please log in to practice your speech">
@@ -169,34 +148,10 @@ function App() {
             }
           />
           <Route
-            path="/practiceWritten"
-            element={
-              <ProtectedRoute message="Please log in to practice writing">
-                <WrittenPractice />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practiceBodyLanguage"
-            element={
-              <ProtectedRoute message="Please log in to practice body language">
-                <BodyLanguagePractice />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/completeFeedback"
-            element={
-              <ProtectedRoute message="Please log in to see your complete feedback">
-                <CompleteAnalysisFeedbackReport />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practiceCommunication"
+            path="/practiceExercises"
             element={
               <ProtectedRoute message="Please log in to access communication exercises">
-                <ExerciseModule />
+                <PracticeExercises />
               </ProtectedRoute>
             }
           />

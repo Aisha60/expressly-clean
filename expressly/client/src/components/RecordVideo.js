@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Camera, Upload, ArrowLeft, Video, User, Smile, Hand, Zap, CheckCircle, AlertCircle } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Camera, Upload, ArrowLeft, Video, User, Smile, Hand, Zap, CheckCircle, AlertCircle, Target, Clock, Sparkles, MessageCircle, Play, Square } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { uploadVideo } from "../utils/api";
 
 export default function VideoAnalysisApp() {
@@ -11,16 +11,40 @@ export default function VideoAnalysisApp() {
   const [videoURL, setVideoURL] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [resolution, setResolution] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false); 
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isPracticeMode, setIsPracticeMode] = useState(false);
+  const [practiceTask, setPracticeTask] = useState(null);
 
   const videoRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const recordedChunks = useRef([]);
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Check if we're in practice mode and load task
+  useEffect(() => {
+    const practice = searchParams.get('practice') === 'true';
+    setIsPracticeMode(practice);
+    
+    if (practice) {
+      const storedTask = localStorage.getItem('currentPracticeTask');
+      if (storedTask) {
+        try {
+          setPracticeTask(JSON.parse(storedTask));
+        } catch (err) {
+          console.error('Error parsing practice task:', err);
+        }
+      }
+    }
+  }, [searchParams]);
 
   const goToDashboard = () => {
-    navigate("/dashboard");
+    if(isPracticeMode) { 
+      navigate("/practiceExercises");
+    } else { 
+      navigate("/dashboard"); 
+    }
   };
 
   const measureDuration = (url) => {
@@ -111,10 +135,10 @@ export default function VideoAnalysisApp() {
       timer = setInterval(() => {
         setDuration((prev) => {
           const next = prev + 1;
-          if (next >= 300) {
+          if (next >= (isPracticeMode ? 120 : 300)) {
             mediaRecorderRef.current?.stop();
             setIsRecording(false);
-            setError("Recording has reached the 5 minute limit and was stopped.");
+            setError(`Recording has reached the ${isPracticeMode ? '2 minute' : '5 minute'} limit and was stopped.`);
           }
           return next;
         });
@@ -124,10 +148,10 @@ export default function VideoAnalysisApp() {
       setDuration(0);
     }
     return () => clearInterval(timer);
-  }, [isRecording]);
+  }, [isRecording, isPracticeMode]);
 
   const handleFileChange = (event) => {
-    if (isProcessing) return;
+    if (isProcessing || isPracticeMode) return;
     const file = event.target.files[0];
     if (!file) return;
 
@@ -181,8 +205,9 @@ export default function VideoAnalysisApp() {
         setError("Please record a video of at least 10 seconds.");
         return;
       }
-      if (realDuration > 300) {
-        setError("Videos longer than 5 minutes are not allowed.");
+      const maxDuration = isPracticeMode ? 120 : 300;
+      if (realDuration > maxDuration) {
+        setError(`Videos longer than ${isPracticeMode ? '2 minutes' : '5 minutes'} are not allowed.`);
         return;
       }
     }
@@ -202,7 +227,14 @@ export default function VideoAnalysisApp() {
       const res = await uploadVideo(selectedFile);
       console.log("Upload successful", res.result);
 
-      navigate("/feedbackVideo" , { state: { analysisResult: res.result , duration: realDuration} });
+      navigate("/feedbackVideo", { 
+        state: { 
+          analysisResult: res.result, 
+          duration: realDuration,
+          isPractice: isPracticeMode,
+          practiceTask: practiceTask
+        } 
+      });
     } catch (err) {
       setError(err);
       console.log("error on client is :", err );
@@ -222,14 +254,17 @@ export default function VideoAnalysisApp() {
               className="flex items-center text-gray-600 hover:text-gray-800 transition-colors mr-4 group"
             >
               <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" />
-              Back to Dashboard
+              {isPracticeMode ? 'Back to Practice' : 'Back to Dashboard'}
             </button>
             <div className="flex-1 text-center">
               <h1 className="text-3xl font-bold bg-gradient-to-r from-[#5B67CA] to-[#8B5CF6] bg-clip-text text-transparent">
-                Body Language Analysis
+                {isPracticeMode ? "Body Language Practice Session" : "Body Language Analysis"}
               </h1>
               <p className="text-gray-600 mt-2">
-                Analyze your posture, gestures, and expressions for confident communication
+                {isPracticeMode 
+                  ? "Complete your body language practice task" 
+                  : "Analyze your posture, gestures, and expressions for confident communication"
+                }
               </p>
             </div>
           </div>
@@ -237,59 +272,132 @@ export default function VideoAnalysisApp() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-8">
-        {/* Features Overview */}
-        <div className="mb-12">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-800 mb-4">
-              Professional Body Language Analysis
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Get detailed feedback on your non-verbal communication to project confidence and engagement
-            </p>
+        {/* Practice Task Info - Enhanced Styling */}
+        {isPracticeMode && practiceTask && (
+          <div className="mb-8">
+            <div className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl p-4 mb-6 text-white">
+              <h2 className="text-xl font-bold mb-2 flex items-center">
+                <Target className="w-5 h-5 mr-2" />
+                Practice Task
+              </h2>
+              <p className="text-purple-100 text-sm">
+                Complete this exercise to improve your body language skills
+              </p>
+            </div>
+            
+            <div className="mb-6">
+              <h3 className="font-bold text-gray-800 text-lg mb-3 border-l-4 border-blue-500 pl-3">
+                {practiceTask.title}
+              </h3>
+              <p className="text-gray-600 text-sm mb-4 bg-blue-50 p-3 rounded-lg">
+                {practiceTask.description}
+              </p>
+              
+              {/* Instructions */}
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 mb-4 border-2 border-blue-200">
+                <h4 className="font-semibold text-gray-800 mb-3 flex items-center text-blue-700">
+                  <MessageCircle className="w-5 h-5 text-blue-500 mr-2" />
+                  Your Task:
+                </h4>
+                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-sm font-medium">
+                  {practiceTask.instructions}
+                </p>
+              </div>
+
+              {/* Pro Tips */}
+              {practiceTask.additionalNotes && (
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border-2 border-green-200">
+                  <h4 className="font-semibold text-gray-800 mb-2 flex items-center text-green-700">
+                    <Sparkles className="w-5 h-5 text-green-500 mr-2" />
+                    Pro Tips:
+                  </h4>
+                  <p className="text-gray-700 text-sm leading-relaxed">
+                    {practiceTask.additionalNotes}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
+        )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300 group hover:transform hover:-translate-y-1">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                <User className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">Posture Analysis</h3>
-              <p className="text-gray-600 text-sm">
-                Evaluate your body posture for confidence, openness, and professional presence
+        {/* Features Overview - Only show in assessment mode */}
+        {!isPracticeMode && (
+          <div className="mb-12">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-gray-800 mb-4">
+                Professional Body Language Analysis
+              </h2>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Get detailed feedback on your non-verbal communication to project confidence and engagement
               </p>
             </div>
 
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200 shadow-lg hover:shadow-xl transition-all duration-300 group hover:transform hover:-translate-y-1">
-              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                <Hand className="w-6 h-6 text-white" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300 group hover:transform hover:-translate-y-1">
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <User className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Posture Analysis</h3>
+                <p className="text-gray-600 text-sm">
+                  Evaluate your body posture for confidence, openness, and professional presence
+                </p>
               </div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">Gesture Analysis</h3>
-              <p className="text-gray-600 text-sm">
-                Assess purposeful gesture usage for engaging communication without being excessive
-              </p>
-            </div>
 
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200 shadow-lg hover:shadow-xl transition-all duration-300 group hover:transform hover:-translate-y-1">
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                <Smile className="w-6 h-6 text-white" />
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200 shadow-lg hover:shadow-xl transition-all duration-300 group hover:transform hover:-translate-y-1">
+                <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Hand className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Gesture Analysis</h3>
+                <p className="text-gray-600 text-sm">
+                  Assess purposeful gesture usage for engaging communication without being excessive
+                </p>
               </div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">Expression Analysis</h3>
-              <p className="text-gray-600 text-sm">
-                Analyze facial expressions to ensure you appear confident, engaged, and authentic
-              </p>
+
+              <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200 shadow-lg hover:shadow-xl transition-all duration-300 group hover:transform hover:-translate-y-1">
+                <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Smile className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Expression Analysis</h3>
+                <p className="text-gray-600 text-sm">
+                  Analyze facial expressions to ensure you appear confident, engaged, and authentic
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Input Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Input Mode Selection */}
+          {/* Left Side - Instructions & Controls */}
           <div className="lg:col-span-1">
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-white/20 sticky top-8">
-              <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
-                <Zap className="w-5 h-5 text-yellow-500 mr-2" />
-                Choose Input Method
-              </h2>
+              {isPracticeMode ? (
+                // Practice Mode Instructions
+                <>
+                  <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
+                    <Target className="w-5 h-5 text-blue-500 mr-2" />
+                    Practice Recording
+                  </h2>
+                  
+                  <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-700 font-medium">
+                      Practice Mode: Recording Only
+                    </p>
+                    <p className="text-xs text-blue-600 mt-1">
+                      Upload option is disabled for practice exercises
+                    </p>
+                  </div>
+                </>
+              ) : (
+                // Assessment Mode Instructions
+                <>
+                  <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
+                    <Zap className="w-5 h-5 text-yellow-500 mr-2" />
+                    Choose Input Method
+                  </h2>
+                </>
+              )}
+              
               <div className="space-y-4">
                 <button
                   onClick={toggleRecording}
@@ -304,9 +412,11 @@ export default function VideoAnalysisApp() {
                     <div className={`p-3 rounded-lg mr-3 transition-all duration-200 ${
                       isRecording ? 'bg-gradient-to-r from-red-500 to-orange-500 shadow-lg' : 'bg-gray-100 group-hover:bg-red-100'
                     }`}>
-                      <Camera className={`w-5 h-5 transition-colors ${
-                        isRecording ? 'text-white' : 'text-gray-600 group-hover:text-red-600'
-                      }`} />
+                      {isRecording ? (
+                        <Square className="w-5 h-5 text-white" />
+                      ) : (
+                        <Camera className="w-5 h-5 text-gray-600 group-hover:text-red-600" />
+                      )}
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-800">
@@ -317,26 +427,41 @@ export default function VideoAnalysisApp() {
                   </div>
                 </button>
 
+                {/* Disable upload button in practice mode */}
                 <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isProcessing}
+                  onClick={() => !isPracticeMode && fileInputRef.current?.click()}
+                  disabled={isProcessing || isPracticeMode}
                   className={`w-full p-4 rounded-xl border-2 transition-all duration-200 text-left group ${
-                    selectedFile && !isRecording
+                    selectedFile && !isRecording && !isPracticeMode
                       ? 'border-[#5B67CA] bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg' 
+                      : isPracticeMode
+                      ? 'border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed'
                       : 'border-gray-200 hover:border-[#5B67CA] hover:shadow-lg bg-white'
-                  } ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  }`}
                 >
                   <div className="flex items-center">
                     <div className={`p-3 rounded-lg mr-3 transition-all duration-200 ${
-                      selectedFile && !isRecording ? 'bg-gradient-to-r from-[#5B67CA] to-[#8B5CF6] shadow-lg' : 'bg-gray-100 group-hover:bg-blue-100'
+                      selectedFile && !isRecording && !isPracticeMode 
+                        ? 'bg-gradient-to-r from-[#5B67CA] to-[#8B5CF6] shadow-lg' 
+                        : isPracticeMode
+                        ? 'bg-gray-300'
+                        : 'bg-gray-100 group-hover:bg-blue-100'
                     }`}>
                       <Upload className={`w-5 h-5 transition-colors ${
-                        selectedFile && !isRecording ? 'text-white' : 'text-gray-600 group-hover:text-blue-600'
+                        selectedFile && !isRecording && !isPracticeMode 
+                          ? 'text-white' 
+                          : isPracticeMode
+                          ? 'text-gray-500'
+                          : 'text-gray-600 group-hover:text-blue-600'
                       }`} />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-800">Upload Video</h3>
-                      <p className="text-sm text-gray-600">MP4 or WebM files</p>
+                      <h3 className="font-semibold text-gray-800">
+                        {isPracticeMode ? "Upload Disabled" : "Upload Video"}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {isPracticeMode ? "Not available in practice mode" : "MP4 or WebM files"}
+                      </p>
                     </div>
                   </div>
                 </button>
@@ -346,29 +471,39 @@ export default function VideoAnalysisApp() {
               <div className="mt-6 p-4 bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl border border-gray-200">
                 <h4 className="font-semibold text-gray-800 text-sm mb-3 flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                  Requirements:
+                  {isPracticeMode ? 'Practice Requirements:' : 'Requirements:'}
                 </h4>
                 <ul className="text-xs text-gray-600 space-y-2">
                   <li className="flex items-center">
                     <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2"></div>
-                    10 seconds to 5 minutes duration
+                    {isPracticeMode ? "10 seconds to 2 minutes duration" : "10 seconds to 5 minutes duration"}
                   </li>
                   <li className="flex items-center">
                     <div className="w-1.5 h-1.5 bg-green-500 rounded-full mr-2"></div>
                     Minimum 480p resolution
                   </li>
-                  <li className="flex items-center">
-                    <div className="w-1.5 h-1.5 bg-purple-500 rounded-full mr-2"></div>
-                    Maximum file size: 100MB
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-1.5 h-1.5 bg-orange-500 rounded-full mr-2"></div>
-                    Supported: MP4, WebM
-                  </li>
+                  {!isPracticeMode && (
+                    <>
+                      <li className="flex items-center">
+                        <div className="w-1.5 h-1.5 bg-purple-500 rounded-full mr-2"></div>
+                        Maximum file size: 100MB
+                      </li>
+                      <li className="flex items-center">
+                        <div className="w-1.5 h-1.5 bg-orange-500 rounded-full mr-2"></div>
+                        Supported: MP4, WebM
+                      </li>
+                    </>
+                  )}
                   <li className="flex items-center">
                     <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
                     Clear face and upper body visible
                   </li>
+                  {isPracticeMode && (
+                    <li className="flex items-center">
+                      <div className="w-1.5 h-1.5 bg-purple-500 rounded-full mr-2"></div>
+                      Video recording only (upload disabled)
+                    </li>
+                  )}
                 </ul>
               </div>
 
@@ -385,20 +520,27 @@ export default function VideoAnalysisApp() {
                   <div className="w-full bg-red-200 rounded-full h-2">
                     <div 
                       className="bg-gradient-to-r from-red-500 to-orange-500 h-2 rounded-full transition-all duration-1000"
-                      style={{ width: `${(duration / 300) * 100}%` }}
+                      style={{ width: `${(duration / (isPracticeMode ? 120 : 300)) * 100}%` }}
                     ></div>
                   </div>
-                  <p className="text-red-600 text-xs mt-2 text-center">Maximum: 5 minutes</p>
+                  <p className="text-red-600 text-xs mt-2 text-center">
+                    Maximum: {isPracticeMode ? "2 minutes" : "5 minutes"}
+                  </p>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Video Preview & Actions */}
+          {/* Right Side - Video Preview & Actions */}
           <div className="lg:col-span-2">
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-white/20">
               <h2 className="text-xl font-semibold text-gray-800 mb-6">
-                {selectedFile ? "Video Preview" : "Get Started"}
+                {selectedFile 
+                  ? "Video Preview" 
+                  : isPracticeMode 
+                    ? "Start Your Practice Recording" 
+                    : "Get Started"
+                }
               </h2>
 
               {/* Video Preview */}
@@ -415,9 +557,17 @@ export default function VideoAnalysisApp() {
                 {!isRecording && !videoURL && (
                   <div className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center bg-gradient-to-br from-gray-50 to-blue-50">
                     <Video className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 font-medium">No video recorded or uploaded yet</p>
+                    <p className="text-gray-600 font-medium">
+                      {isPracticeMode 
+                        ? "No practice recording yet" 
+                        : "No video recorded or uploaded yet"
+                      }
+                    </p>
                     <p className="text-sm text-gray-500 mt-2">
-                      Record a new video or upload an existing one to get started with body language analysis
+                      {isPracticeMode
+                        ? "Record your practice video following the exercise instructions above"
+                        : "Record a new video or upload an existing one to get started with body language analysis"
+                      }
                     </p>
                   </div>
                 )}
@@ -429,7 +579,9 @@ export default function VideoAnalysisApp() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <Video className="w-5 h-5 text-green-600 mr-2" />
-                      <span className="font-semibold text-green-800">Video Ready for Analysis</span>
+                      <span className="font-semibold text-green-800">
+                        {isPracticeMode ? "Practice Video Ready" : "Video Ready for Analysis"}
+                      </span>
                     </div>
                     <div className="text-sm text-green-700 font-medium">
                       {selectedFile.name}
@@ -470,12 +622,12 @@ export default function VideoAnalysisApp() {
                   {isProcessing ? (
                     <div className="flex items-center justify-center">
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
-                      Analyzing Body Language...
+                      {isPracticeMode ? "Analyzing Practice..." : "Analyzing Body Language..."}
                     </div>
                   ) : (
                     <div className="flex items-center justify-center">
-                      <Zap className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                      Analyze Body Language
+                      <Sparkles className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                      {isPracticeMode ? "Submit Practice Task" : "Analyze Body Language"}
                     </div>
                   )}
                 </button>
@@ -486,7 +638,7 @@ export default function VideoAnalysisApp() {
                     disabled={isProcessing}
                     className="px-6 py-4 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 rounded-xl font-semibold hover:from-gray-200 hover:to-gray-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex-1 sm:flex-none border border-gray-300"
                   >
-                    Retake Video
+                    {isPracticeMode ? "Restart Practice" : "Retake Video"}
                   </button>
                 )}
               </div>
@@ -494,15 +646,17 @@ export default function VideoAnalysisApp() {
           </div>
         </div>
 
-        {/* Hidden File Input */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="video/mp4,video/webm"
-          className="hidden"
-          onChange={handleFileChange}
-          disabled={isProcessing}
-        />
+        {/* Hidden File Input - Only available in non-practice mode */}
+        {!isPracticeMode && (
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="video/mp4,video/webm"
+            className="hidden"
+            onChange={handleFileChange}
+            disabled={isProcessing}
+          />
+        )}
       </main>
 
       {/* Processing Overlay */}
@@ -510,9 +664,14 @@ export default function VideoAnalysisApp() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex flex-col items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-8 flex flex-col items-center shadow-2xl max-w-md mx-4 border border-white/20">
             <div className="w-16 h-16 border-4 border-[#5B67CA] border-t-transparent rounded-full animate-spin mb-6"></div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-3">Processing Your Video</h3>
+            <h3 className="text-xl font-semibold text-gray-800 mb-3">
+              {isPracticeMode ? "Processing Your Practice" : "Processing Your Video"}
+            </h3>
             <p className="text-gray-600 text-center mb-2">
-              We're analyzing your body language, gestures, and expressions.
+              {isPracticeMode
+                ? "We're analyzing your practice session against the exercise requirements."
+                : "We're analyzing your body language, gestures, and expressions."
+              }
             </p>
             <p className="text-gray-500 text-sm text-center">
               This may take a few minutes. Please don't close this window.

@@ -503,7 +503,7 @@ ${analysisData.expressions?.feedback?.length ? `\nExpressions Analysis:\n${analy
 
   // Function to handle navigation to practice page
   const navigateToPractice = () => {
-    navigate('/practiceBodyLanguage');
+    navigate('/practiceExercises');
   };
 
   if (loading) {
@@ -860,7 +860,6 @@ ${analysisData.expressions?.feedback?.length ? `\nExpressions Analysis:\n${analy
   );
 }
 
-// Enhanced Score Card Component with thinner colored borders
 function ScoreCard({ title, score, feedback, color, borderColor, status }) {
   return (
     <div className={`bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border ${borderColor} hover:shadow-xl transition-all duration-300 group`}>
@@ -900,7 +899,6 @@ function ScoreCard({ title, score, feedback, color, borderColor, status }) {
   );
 }
 
-// Updated Skipped Module Card Component with thinner border
 function SkippedModuleCard({ title, reason }) {
   return (
     <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl shadow-lg p-6 border border-yellow-300 hover:shadow-xl transition-all duration-300">

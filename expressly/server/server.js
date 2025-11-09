@@ -6,6 +6,7 @@ import authRoutes from './routes/authRoutes.js';
 import {errorHandler} from './middleware/errorHandler.js';
 import uploadRoutes from './routes/videoRoutes.js';
 import textAnalysisRoutes from './routes/textAnalysisRoutes.js';
+import practiceRoutes from './routes/practice.js';
 
 dotenv.config();
 const app = express();
@@ -33,6 +34,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api', textAnalysisRoutes);
+app.use('/api/practice', practiceRoutes);
 
 
 // error handling middleware
