@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useAuth } from "../context/AuthContext";
 import { ArrowLeft, Mic, RefreshCcw, Star, ChevronRight } from "lucide-react";
 
 const GEMINI_API_KEY = "AIzaSyCMpgu6UlX0MKlGQO5VY4SpZ8BLSGR2LRE";
@@ -33,6 +34,9 @@ export default function PracticeSpeech() {
   const [duration, setDuration] = useState(0);
 
   const timerRef = useRef(null);
+
+  // authenticated user
+  const { user } = useAuth();
 
   const goToDashboard = () => {
     alert("Navigate to dashboard - replace with: navigate('/dashboard')");
@@ -152,20 +156,18 @@ export default function PracticeSpeech() {
         .filter(q => {
           if (!q) return false;
           
-          // Special handling for tone exercise scenarios
-          if (exerciseType === "Tone") {
-            const parts = q.split("->");
-            if (parts.length !== 2) return false;
-            
-            const [scenario, response] = parts.map(p => p.trim());
-            // Validate scenario length and response format
-            const hasEmotion = /\[(excited|sympathetic|angry|happy|worried|proud|sad)\]$/i.test(response);
-            const responseWords = response.split(' ').length;
-            return scenario.split(' ').length >= 5 && 
-                   responseWords >= 10 && 
-                   responseWords <= 8 && 
-                   hasEmotion;
-          }
+              // Special handling for tone exercise scenarios
+              if (exerciseType === "Tone") {
+                const parts = q.split("->");
+                if (parts.length !== 2) return false;
+
+                const [scenario, response] = parts.map((p) => p.trim());
+                // Validate scenario length and response format
+                const hasEmotion = /\[(excited|sympathetic|angry|happy|worried|proud|sad)\]$/i.test(response);
+                const responseWords = response.replace(/\[.*\]$/, "").trim().split(/\s+/).filter(Boolean).length;
+                // Accept responses roughly between 6 and 12 words (flexible)
+                return scenario.split(" ").length >= 5 && responseWords >= 6 && responseWords <= 12 && hasEmotion;
+              }
           
           // For other exercise types
           const words = q.split(' ').length;
@@ -279,7 +281,7 @@ export default function PracticeSpeech() {
         reader.readAsDataURL(selectedFile);
       });
 
-      const res = await fetch("http://localhost:5001/evaluate-feature", {
+      const res = await fetch("http://localhost:5001/speech/evaluate-feature", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -287,7 +289,8 @@ export default function PracticeSpeech() {
         body: JSON.stringify({
           audioData: audioBase64,
           feature: featureMap[selectedExercise],
-          question: questions[currentIndex]
+          question: questions[currentIndex],
+          userId: user && user._id ? user._id : undefined
         })
       });
 

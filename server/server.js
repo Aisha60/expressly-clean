@@ -8,6 +8,7 @@ import videoRoutes from './routes/videoRoutes.js';
 import audioUploadRoutes from './routes/uploadRoutes.js';
 import textAnalysisRoutes from './routes/textAnalysisRoutes.js';
 import progressRoutes from './routes/progressRoutes.js';
+import practiceRoutes from './routes/practice.js';
 dotenv.config();
 const app = express();
 
@@ -36,11 +37,12 @@ app.use('/api/upload', audioUploadRoutes);
 app.use('/api/upload', videoRoutes);
 app.use('/api', textAnalysisRoutes);
 app.use('/api/progress', progressRoutes);
+app.use('/api/practice', practiceRoutes);
 
-// Simple health endpoint for the Node API layer
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok' });
-});
+// // Simple health endpoint for the Node API layer
+// app.get('/api/health', (req, res) => {
+//   res.json({ status: 'ok' });
+// });
 
 
 // error handling middleware

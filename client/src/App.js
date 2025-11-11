@@ -23,6 +23,8 @@ import BodyLanguageReport from './components/FeedbackVideo.js';
 import BodyLanguagePractice from './components/PracticeBodyLanguage.js';
 import CompleteAnalysisApp from './components/complete.js';
 import CompleteAnalysisFeedbackReport from './components/CompleteFeedback.js';
+import PracticeExercises from './components/PracticeExercises';
+
 import ExerciseModule from './components/CompletePractice.js';
 
 
@@ -193,10 +195,10 @@ function App() {
             }
           />
           <Route
-            path="/practiceCommunication"
+            path="/practiceExercises"
             element={
               <ProtectedRoute message="Please log in to access communication exercises">
-                <ExerciseModule />
+                <PracticeExercises />
               </ProtectedRoute>
             }
           />

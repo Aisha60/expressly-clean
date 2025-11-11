@@ -77,7 +77,7 @@
 // export default Progress;
 
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { TrendingUp, TrendingDown, Target, Award, Activity } from "lucide-react";
 import Sidebar from "./reusable/Sidebar";
 import Topbar from "./reusable/Topbar";
@@ -85,19 +85,10 @@ import FilterBar from "./reusable/FilterBar";
 import StatusIndicator from "./reusable/StatusIndicator";
 import ProgressChart from "./reusable/ProgressChart";
 import { dummyData } from "./reusable/dummyProgressData";
-import { getProgressSummary, getProgressSessions, getLeaderboard } from '../utils/api';
-import { useAuth } from '../context/AuthContext';
 
 const Progress = () => {
   const [selectedSkill, setSelectedSkill] = useState("Overall");
   const [selectedRange, setSelectedRange] = useState("All time");
-
-  const { user } = useAuth();
-  const userId = user?._id;
-  const [sessionsState, setSessionsState] = useState([]);
-  const [leaderboardState, setLeaderboardState] = useState([]);
-  const [summaryState, setSummaryState] = useState(null);
-  const [loading, setLoading] = useState(false);
 
   const now = new Date();
   const filterDate = (dateStr) => {
@@ -114,35 +105,31 @@ const Progress = () => {
     return true;
   };
 
-  // Chart data built from sessionsState (fetched from backend)
   const chartData = useMemo(() => {
     const result = {};
-    const sessions = sessionsState || [];
+    const skills = selectedSkill === "Overall" ? Object.keys(dummyData) : [selectedSkill];
 
-    sessions.forEach((s) => {
-      const date = new Date(s.timestamp).toISOString().split('T')[0];
-      if (!filterDate(date)) return;
+    skills.forEach((skill) => {
+      dummyData[skill].forEach(({ score, date }) => {
+        if (!filterDate(date)) return;
 
-      if (!result[date]) result[date] = { total: 0, count: 0, skills: {} };
-
-      // map type to a skill label
-      const skill = s.type === 'speech' ? 'Speech' : s.type === 'video' ? 'Video' : 'Text';
-      const score = typeof s.score === 'number' ? s.score : (s.score ? Number(s.score) : null);
-      if (score !== null && !Number.isNaN(score)) {
+        if (!result[date]) {
+          result[date] = { total: 0, count: 0, skills: {} };
+        }
         result[date].total += score;
         result[date].count += 1;
         result[date].skills[skill] = score;
-      }
+      });
     });
 
     return Object.keys(result)
       .sort()
       .map((date) => ({
         date,
-        score: result[date].count ? Math.round((result[date].total / result[date].count) * 10) / 10 : 0,
+        score: Math.round((result[date].total / result[date].count) * 10) / 10,
         skills: result[date].skills,
       }));
-  }, [sessionsState, selectedSkill, selectedRange]);
+  }, [selectedSkill, selectedRange]);
 
   const trend = chartData.length > 1 && chartData[chartData.length - 1].score > chartData[0].score
     ? "Improving"
@@ -159,29 +146,6 @@ const Progress = () => {
       sessions: chartData.length
     };
   }, [chartData]);
-
-  // Fetch backend progress data
-  useEffect(() => {
-    const load = async () => {
-      if (!userId) return;
-      setLoading(true);
-      try {
-        const [sRes, sessRes, lbRes] = await Promise.all([
-          getProgressSummary(userId),
-          getProgressSessions(userId),
-          getLeaderboard('overall', 7)
-        ]);
-        if (sRes?.success) setSummaryState(sRes.summary);
-        if (sessRes?.success) setSessionsState(sessRes.sessions || []);
-        if (lbRes?.success) setLeaderboardState(lbRes.leaderboard || []);
-      } catch (e) {
-        console.error('Error loading progress data', e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [userId]);
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">

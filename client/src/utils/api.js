@@ -279,3 +279,41 @@ export const getBadges = async (userId) => {
   return res.data;
 };
 
+
+// -------------------- PRACTICE EXERCISES --------------------
+
+// Helper to get user ID from localStorage
+const getUserId = () => {
+  const user = JSON.parse(localStorage.getItem("user")); 
+  if (user._id) {
+      return user._id;
+    }
+    return null;
+};
+
+// Generate practice task API
+export const generate_PracticeTask = async (moduleType) => {
+  try {
+    const userId = getUserId();
+    
+    if (!userId) {
+      throw new Error('User not found. Please login again.');
+    }
+
+    console.log("sending API req for:", {userId, moduleType});
+
+    const response = await axios.post(`${BASE_URL}/practice/generate-task`, {
+      userId: userId,
+      moduleType: moduleType
+    });
+    
+    console.log("Practice task returned is:" , response.data)
+    return response.data;
+    
+  } catch (error) {
+    console.error('Generate practice task error:', error);
+    throw error.response?.data || error;
+  }
+};
+
+
